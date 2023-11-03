@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import styles from './styles.module.css';
 import Searchbar from './Searchbar/Searchbar';
 import ImageGallery from './ImageGallery/ImageGallery';
@@ -8,85 +8,85 @@ import { Button } from './Button/Button';
 import { Modal } from './Modal/Modal';
 import Loader from './Loader/Loader';
 
-export class App extends Component {
-  state = {
-    query: '',
-    hits: [],
-    page: 1,
-    total: null,
-    spinner: false,
-    showModal: false,
-    urlModal: null,
-  };
+export const App = () => {
+  const [query, setQuery] = useState('');
+  const [hits, setHits] = useState([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(null);
+  const [spinner, setSpinner] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [urlModal, setUrlModal] = useState(null);
 
-  componentDidUpdate(_, prevState) {
-    const { page, query } = this.state;
-    if (page !== prevState.page || query !== prevState.query) {
-      this.fetchImages();
-    }
-  }
+  const [prevPage, setPrevPage] = useState(1);
+  const [prevQuery, setPrevQuery] = useState('');
 
-  fetchImages = async () => {
-    const { page, query } = this.state;
+  const fetchImages = useCallback(async () => {
     try {
-      this.setState({ spinner: true });
+      setSpinner(true);
       const data = await fetchQuery(query, page);
 
       if (data.hits.length === 0) {
         toast.error('No images found for your query!');
-        this.setState({ spinner: false });
+        setSpinner(false);
         return;
       }
 
       const { hits: newImages, totalHits } = data;
-  
+
       if (page === 1) {
         toast.info(`Found: ${totalHits} images for your request`);
       }
 
-      this.setState(prevState => ({
-        hits: [...prevState.hits, ...newImages],
-        total: totalHits,
-        spinner: false,
-      }));
+      setHits(prevHits => [...prevHits, ...newImages]);
+      setTotal(totalHits);
+      setSpinner(false);
     } catch (error) {
       toast.error('Error fetching data: ' + error);
-      this.setState({ spinner: false });
+      setSpinner(false);
     }
-  };
+  }, [query, page]);
 
-  handleFormSubmit = query => {
-    if (this.state.query === query) {
+  useEffect(() => {
+    if (page !== prevPage || query !== prevQuery) {
+      fetchImages();
+      setPrevPage(page);
+      setPrevQuery(query);
+    }
+  }, [page, query, prevPage, prevQuery, fetchImages]);
+
+  const handleFormSubmit = newQuery => {
+    if (query === newQuery) {
       return;
     }
-    this.setState({ query: query, hits: [], page: 1 });
+    setQuery(newQuery);
+    setHits([]);
+    setPage(1);
   };
 
-  handleLoadMore = () => {
-    this.setState(prevState => ({ page: prevState.page + 1 }));
+  const handleLoadMore = () => {
+    setPage(prevPage => prevPage + 1);
   };
 
-  openModal = urlModal => {
-    this.setState({ urlModal: urlModal, showModal: true });
-  };
-  closeModal = () => {
-    this.setState({ showModal: false });
+  const openModal = newUrlModal => {
+    setUrlModal(newUrlModal);
+    setShowModal(true);
   };
 
-  render() {
-    const { spinner, hits, total, showModal, urlModal } = this.state;
-    return (
-      <div className={styles.App}>
-        <Searchbar onSubmit={this.handleFormSubmit} />
-        {spinner && <Loader />}
-        <ImageGallery hits={this.state.hits} openModal={this.openModal} />
-        {hits.length > 0 && hits.length < total && (
-          <Button onClick={this.handleLoadMore} />
-        )}
-        {showModal && <Modal data={urlModal} closeModal={this.closeModal} />}
-      </div>
-    );
-  }
-}
+  const closeModal = () => {
+    setShowModal(false);
+  };
+
+  return (
+    <div className={styles.App}>
+      <Searchbar onSubmit={handleFormSubmit} />
+      {spinner && <Loader />}
+      <ImageGallery hits={hits} openModal={openModal} />
+      {hits.length > 0 && hits.length < total && (
+        <Button onClick={handleLoadMore} />
+      )}
+      {showModal && <Modal data={urlModal} closeModal={closeModal} />}
+    </div>
+  );
+};
 
 export default App;
