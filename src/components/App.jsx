@@ -18,6 +18,9 @@ export const App = () => {
   const [urlModal, setUrlModal] = useState(null);
 
   useEffect(() => {
+    if (!query) {
+      return;
+    }
     const fetchImages = async () => {
       try {
         setSpinner(true);
@@ -25,7 +28,6 @@ export const App = () => {
 
         if (data.hits.length === 0) {
           toast.error('No images found for your query!');
-          setSpinner(false);
           return;
         }
 
@@ -37,16 +39,16 @@ export const App = () => {
 
         setHits(prevHits => [...prevHits, ...newImages]);
         setTotal(totalHits);
-        setSpinner(false);
       } catch (error) {
         toast.error('Error fetching data: ' + error);
-        setSpinner(false);
-      }
+        
+      } finally {
+      setSpinner(false);
+    }
     };
 
-    if (page > 1 || query) {
       fetchImages();
-    }
+    
   }, [page, query]);
 
   const handleFormSubmit = newQuery => {

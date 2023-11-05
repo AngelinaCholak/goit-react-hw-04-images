@@ -16,14 +16,11 @@ export const Modal = ({ closeModal, data }) => {
         closeModal();
       }
     };
-    const handleKeyDown = event => {
-      keyboardPress(event);
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
+    
+    window.addEventListener('keydown', keyboardPress);
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keydown', keyboardPress);
     };
   }, [closeModal]);
 
